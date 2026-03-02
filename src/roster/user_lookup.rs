@@ -1,7 +1,7 @@
 use anyhow::bail;
 use poise::CreateReply;
 use serenity::all::{
-    CreateEmbed, CreateEmbedAuthor, Member, Mentionable as _, User, futures::StreamExt as _,
+    CreateEmbed, CreateEmbedAuthor, Member, Mentionable as _, User,
 };
 
 use crate::{
