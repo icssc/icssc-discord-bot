@@ -3,26 +3,23 @@ use crate::util::message::get_members;
 use crate::util::modal::ModalInputTexts;
 use crate::util::paginate::{EmbedLinePaginator, PaginatorOptions};
 use crate::util::text::comma_join;
-use crate::util::{ContextExtras as _, spottings_embed};
 use crate::{AppContext, AppError, AppVars};
 use anyhow::{Context as _, bail};
 use entity::{spotting_message, spotting_victim};
 use itertools::Itertools as _;
-use poise::{ChoiceParameter, CreateReply};
+use poise::ChoiceParameter;
 use sea_orm::{
     ActiveValue, ConnectionTrait as _, DbErr, EntityTrait as _, QueryOrder as _,
     TransactionTrait as _,
 };
 use sea_orm::{DatabaseConnection, TransactionError};
 use serenity::all::{
-    CacheHttp as _, CreateActionRow, CreateButton, CreateInputText, CreateInteractionResponse,
+    CacheHttp as _, CreateActionRow, CreateInputText, CreateInteractionResponse,
     CreateInteractionResponseMessage, CreateModal, GuildId, InputTextStyle, Mentionable as _,
-    ModalInteraction, ReactionType, User, UserId,
+    ModalInteraction, ReactionType, UserId,
 };
-use std::collections::HashSet;
 use std::num::NonZeroUsize;
 use std::str::FromStr as _;
-use std::time::Duration;
 
 #[derive(PartialEq, Eq, ChoiceParameter)]
 enum SpottingType {
@@ -233,17 +230,14 @@ pub(crate) async fn confirm_message_spotting_modal(
     Ok(())
 }
 
-/// Log past snipes
+/// View the history of past snipes
 #[poise::command(prefix_command, slash_command, guild_only)]
 pub(crate) async fn history(ctx: AppContext<'_>) -> Result<(), AppError> {
     let conn = &ctx.data().db;
 
     let got = spotting_message::Entity::find()
-        // .column_as(Expr::cust("array_agg(snipe.victim_id)"), "victims")
         .find_with_related(spotting_victim::Entity)
-        // .group_by(message::Column::MessageId)
         .order_by_desc(spotting_message::Column::MessageId)
-        // .into_model::<ImplodedSnipes>()
         .all(conn)
         .await
         .context("log get recent snipes")?;
