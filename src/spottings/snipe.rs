@@ -90,6 +90,10 @@ pub(crate) async fn log_message_spotting(
 ) -> Result<(), AppError> {
     let spotted = get_members(&message, false);
 
+    let AppContext::Application(ctx) = ctx else {
+        bail!("unexpected context type");
+    };
+
     // TODO update when labels are supported
     // let spotter_input = CreateActionRow::InputText(
     //     CreateSelectMenu::new("spotting_modal_spotter", CreateSelectMenuKind::User {
@@ -134,9 +138,6 @@ pub(crate) async fn log_message_spotting(
     ]);
 
     let reply = CreateInteractionResponse::Modal(modal);
-    let AppContext::Application(ctx) = ctx else {
-        bail!("unexpected context type")
-    };
 
     ctx.interaction.create_response(ctx.http(), reply).await?;
 
@@ -155,6 +156,14 @@ pub(crate) async fn confirm_message_spotting_modal(
         .context("unexpected non-numerical message ID")
         .map(|id| ixn.channel_id.message(ctx.http(), id))?
         .await?;
+
+    if message
+        .attachments
+        .iter()
+        .all(|attachment| attachment.height.is_none())
+    {
+        bail!("No images in your linked message!");
+    }
 
     let spotted_uids = inputs
         .get_required_value("spotting_modal_spotted")?
@@ -181,20 +190,10 @@ pub(crate) async fn confirm_message_spotting_modal(
         .collect_vec()
         && !opted_out.is_empty()
     {
-        ixn.create_response(
-            ctx.http(),
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content(format!(
-                        "Can't proceed, the following users are opted out:\n{}",
-                        opted_out.into_iter().map(|uid| uid.mention()).join("\n")
-                    ))
-                    .ephemeral(true),
-            ),
-        )
-        .await?;
-
-        return Ok(());
+        bail!(format!(
+            "Can't proceed, the following users are opted out:\n{}",
+            opted_out.into_iter().map(|uid| uid.mention()).join("\n")
+        ));
     }
 
     let reaction = ReactionType::Unicode(
@@ -219,7 +218,6 @@ pub(crate) async fn confirm_message_spotting_modal(
         _ => "couldn't insert :(",
     };
 
-    // write the snipe to the db
     ixn.create_response(
         ctx.http(),
         CreateInteractionResponse::Message(
