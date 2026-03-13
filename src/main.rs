@@ -22,10 +22,10 @@ use env_vars_struct::env_vars_struct;
 use migration::{Migrator, MigratorTrait as _};
 use serenity::Client;
 use serenity::all::GatewayIntents;
-use tokio::sync::RwLock;
 use std::env;
 use std::ops::{BitOr as _, Deref};
 use std::path::PathBuf;
+use tokio::sync::RwLock;
 
 env_vars_struct!(
     "APP__DATABASE_URL",

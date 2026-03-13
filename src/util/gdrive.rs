@@ -1,4 +1,7 @@
-use std::{ops::Add, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    ops::Add as _,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use chrono::{DateTime, Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
@@ -20,7 +23,7 @@ struct Claims {
 struct TokenResponse {
     access_token: String,
     // Can also read token_type: String and expires_in: u64
-    expires_in: i64
+    expires_in: i64,
 }
 
 pub(crate) struct GoogleServiceAccount {
@@ -47,7 +50,10 @@ impl GoogleServiceAccount {
             .expect("Time went backwards");
         let now = now.as_secs();
 
-        if self.expires > Utc::now() && scope == self.last_scope && let Some(resp) = &self.last_response {
+        if self.expires > Utc::now()
+            && scope == self.last_scope
+            && let Some(resp) = &self.last_response
+        {
             return Ok(resp.access_token.clone());
         }
 
@@ -81,9 +87,9 @@ impl GoogleServiceAccount {
             .await?;
 
         let access_token = token_resp.access_token.clone();
-        self.expires = Utc::now().add(Duration::seconds(token_resp.expires_in));        
+        self.expires = Utc::now().add(Duration::seconds(token_resp.expires_in));
         self.last_response = Some(token_resp);
-        self.last_scope = scope.to_owned();
+        scope.clone_into(&mut self.last_scope);
 
         Ok(access_token)
     }
@@ -159,8 +165,7 @@ pub(crate) async fn get_file_permissions(
     let mut permissions = vec![];
 
     loop {
-        let resp = get_permissions_page(data, &access_token, next_page_token.as_deref())
-            .await?;
+        let resp = get_permissions_page(data, &access_token, next_page_token.as_deref()).await?;
 
         permissions.extend(resp.permissions);
         match resp.next_page_token {

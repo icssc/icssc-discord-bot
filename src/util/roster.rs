@@ -36,12 +36,7 @@ fn parse_committees_string(committees_text: &str) -> Vec<String> {
 async fn get_roster_rows(data: &AppVars) -> Result<SheetsResponse, AppError> {
     let spreadsheet = &data.env.roster_spreadsheet;
 
-    let resp = get_spreadsheet_range(
-        data,
-        &spreadsheet.id,
-        &spreadsheet.range,
-    )
-    .await?;
+    let resp = get_spreadsheet_range(data, &spreadsheet.id, &spreadsheet.range).await?;
 
     Ok(resp)
 }

@@ -12,7 +12,8 @@ pub(crate) async fn get_spreadsheet_range(
     sheet_id: &str,
     range: &str,
 ) -> anyhow::Result<SheetsResponse> {
-    let access_token = data.google_service_account
+    let access_token = data
+        .google_service_account
         .write()
         .await
         .get_access_token("https://www.googleapis.com/auth/spreadsheets.readonly")

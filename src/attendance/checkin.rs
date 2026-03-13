@@ -23,23 +23,22 @@ use crate::{
 /// Check into today's ICSSC event!
 #[poise::command(slash_command, hide_in_help)]
 pub(crate) async fn checkin(ctx: AppContext<'_>) -> Result<(), Error> {
-    let Ok(_) = ctx.data()
+    let Ok(_) = ctx
+        .data()
         .google_service_account
         .write()
-        .await.
-        get_access_token("https://www.googleapis.com/auth/spreadsheets.readonly")
+        .await
+        .get_access_token("https://www.googleapis.com/auth/spreadsheets.readonly")
         .await
     else {
-          ctx.reply_ephemeral("Unable to find who you are :(").await?;
-          return Ok(());
+        ctx.reply_ephemeral("Unable to find who you are :(").await?;
+        return Ok(());
     };
 
     ctx.defer_ephemeral().await?;
 
     let username = &ctx.author().name;
-    let Ok(Some(user)) =
-        get_user_from_discord(ctx.data(), username.clone()).await
-    else {
+    let Ok(Some(user)) = get_user_from_discord(ctx.data(), username.clone()).await else {
         ctx.reply_ephemeral(
             "\
 Cannot find a matching internal member. Double check that your \

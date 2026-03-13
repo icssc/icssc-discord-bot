@@ -3,14 +3,14 @@ use poise::CreateReply;
 use serenity::all::{CreateEmbed, CreateEmbedAuthor, Member, Mentionable as _, User};
 
 use crate::{
-    attendance::attended::get_events_attended_text, matchy::opt_in::MatchyMeetupOptIn, spottings::{privacy::SnipesOptOut, socials_role::SocialsParticipation},
+    AppContext, AppError, AppVars,
+    attendance::attended::get_events_attended_text,
+    matchy::opt_in::MatchyMeetupOptIn,
+    spottings::{privacy::SnipesOptOut, socials_role::SocialsParticipation},
     util::{
-        base_embed, roster::{get_user_from_discord, RosterSheetRow},
-        ContextExtras as _,
+        ContextExtras as _, base_embed,
+        roster::{RosterSheetRow, get_user_from_discord},
     },
-    AppContext,
-    AppError,
-    AppVars,
 };
 
 #[poise::command(context_menu_command = "Lookup Member", guild_only)]
