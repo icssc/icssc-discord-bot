@@ -111,4 +111,4 @@ If you need to check where a certain shortlink redirects to, use `/shortlink che
     - Revert the removed line in `entities/mod.rs` for the materialized view :P
 
 ## Todos
-- `src/util/roster.rs`: create struct to handle caching Google Sheets responses
+- consider additional helper methods for Roster struct
