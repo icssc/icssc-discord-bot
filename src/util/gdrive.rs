@@ -22,7 +22,7 @@ struct Claims {
 #[derive(Debug, Deserialize, Clone)]
 struct TokenResponse {
     access_token: String,
-    // Can also read token_type: String and expires_in: u64
+    // Can also read token_type: String
     expires_in: i64,
 }
 
