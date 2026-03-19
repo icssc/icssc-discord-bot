@@ -1,24 +1,18 @@
 use crate::spottings::util::opted_out_among;
 use crate::util::message::get_members;
 use crate::util::modal::ModalInputTexts;
-use crate::util::paginate::{EmbedLinePaginator, PaginatorOptions};
-use crate::util::text::comma_join;
 use crate::{AppContext, AppError, AppVars};
 use anyhow::{Context as _, bail};
 use entity::{spotting_message, spotting_victim};
 use itertools::Itertools as _;
 use poise::ChoiceParameter;
-use sea_orm::{
-    ActiveValue, ConnectionTrait as _, DbErr, EntityTrait as _, QueryOrder as _,
-    TransactionTrait as _,
-};
+use sea_orm::{ActiveValue, ConnectionTrait as _, DbErr, EntityTrait as _, TransactionTrait as _};
 use sea_orm::{DatabaseConnection, TransactionError};
 use serenity::all::{
     CacheHttp as _, CreateActionRow, CreateInputText, CreateInteractionResponse,
     CreateInteractionResponseMessage, CreateModal, GuildId, InputTextStyle, Mentionable as _,
     ModalInteraction, ReactionType, UserId,
 };
-use std::num::NonZeroUsize;
 use std::str::FromStr as _;
 
 #[derive(PartialEq, Eq, ChoiceParameter)]
@@ -226,49 +220,6 @@ pub(crate) async fn confirm_message_spotting_modal(
     .await?;
 
     let _ = message.react(ctx.http(), reaction).await;
-
-    Ok(())
-}
-
-/// View the history of past snipes
-#[poise::command(prefix_command, slash_command, guild_only)]
-pub(crate) async fn history(ctx: AppContext<'_>) -> Result<(), AppError> {
-    let conn = &ctx.data().db;
-
-    let got = spotting_message::Entity::find()
-        .order_by_desc(spotting_message::Column::MessageId)
-        .find_with_related(spotting_victim::Entity)
-        .all(conn)
-        .await
-        .context("log get recent snipes")?;
-
-    let paginator = EmbedLinePaginator::new(
-        got.iter()
-            .map(|(msg, victims)| {
-                format!(
-                    "<t:{}:d> at <t:{0}:t>: **{}** spotted {} ([original {}](https://discord.com/channels/{}/{}/{}))",
-                    msg.time_posted.and_utc().timestamp(),
-                    UserId::from(msg.author_id as u64).mention(),
-                    comma_join(
-                        victims
-                            .iter()
-                            .map(|victim| UserId::from(victim.victim_id as u64).mention())
-                    ),
-                    if msg.is_social { "social" } else { "snipe" },
-                    msg.guild_id,
-                    msg.channel_id,
-                    msg.message_id,
-                )
-                .into_boxed_str()
-            })
-            .collect_vec(),
-        PaginatorOptions::default()
-            .sep("\n\n".into())
-            .max_lines(NonZeroUsize::new(10).unwrap())
-            .ephemeral(true),
-    );
-
-    paginator.run(ctx).await.context("log paginate")?;
 
     Ok(())
 }

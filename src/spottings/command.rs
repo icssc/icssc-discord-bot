@@ -1,6 +1,6 @@
 use crate::spottings::{
+    history::history,
     leaderboard::leaderboard,
-    log::history,
     privacy::{check_snipes_participation, set_snipes_participation},
 };
 use crate::{AppContext, AppError};
