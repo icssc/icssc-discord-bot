@@ -142,7 +142,7 @@ fn handle_framework_error(error: FrameworkError<'_, AppVars, AppError>) -> BoxFu
                 error: wrapped_error,
                 ..
             } => {
-                ctx.reply_ephemeral(format!("An unexpected error occurred: {wrapped_error:?}"))
+                ctx.reply_ephemeral(format!("Error: {wrapped_error:?}"))
                     .await
             }
             _ => ctx.reply_ephemeral("An unknown error occurred").await,
