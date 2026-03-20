@@ -53,7 +53,7 @@ pub(crate) async fn history(
     let filter_cond = [
         r#type.map(|t: HistoryFilterType| {
             Condition::all()
-                .add(spotting_message::Column::IsSocial.eq(matches!(t, HistoryFilterType::Social)))
+                .add(spotting_message::Column::IsSocial.eq(t == HistoryFilterType::Social))
         }),
         participant.map(|user| {
             Condition::any()
