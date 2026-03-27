@@ -7,6 +7,7 @@ use itertools::Itertools as _;
 use serenity::all::{PartialGuild, RoleId, UserId};
 
 /// Returns a vector of all guild members with the specified role ID.
+#[expect(dead_code)]
 async fn guild_members_with_role(
     ctx: &AppContext<'_>,
     guild: &PartialGuild,

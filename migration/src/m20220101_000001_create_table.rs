@@ -135,6 +135,7 @@ enum Message {
     Table,
     GuildId,
     ChannelId,
+    #[allow(clippy::enum_variant_names)]
     MessageId,
     AuthorId,
     TimePosted,

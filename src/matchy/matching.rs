@@ -1,4 +1,4 @@
-use super::helpers::{Match, Pairing};
+use super::helpers::Pairing;
 use anyhow::{Context as _, Result, bail, ensure};
 use itertools::Itertools as _;
 use petgraph::Undirected;
@@ -22,6 +22,7 @@ fn shuffled<T>(mut vec: Vec<T>, seed: u64) -> Vec<T> {
 /// Creates "pairs" from the vector (up to one triple is created if there is not an even number).
 /// Each pair is represented as a smaller vector
 /// within the larger returned vector.
+#[expect(dead_code)]
 pub fn random_pair<T: Clone>(vec: Vec<T>, seed: u64) -> Pairing<T> {
     assert!(vec.len() > 1, "Cannot pair with <= 1 elements.");
     let vec = shuffled(vec, seed);
@@ -55,7 +56,7 @@ impl ConstraintEdge {
 /// Uses a graph matching algorithm.
 pub fn graph_pair<T: Hash + Eq + Copy>(
     vec: Vec<T>,
-    previous_pairings: &[Match<T>],
+    previous_pairings: &[Vec<T>],
     seed: u64,
 ) -> Result<Pairing<T>> {
     if vec.len() < 2 {
@@ -71,7 +72,7 @@ pub fn graph_pair<T: Hash + Eq + Copy>(
     let (graph, constraints) = build_matching_graph(&vec, previous_pairings);
     let matching = maximum_matching(&graph);
 
-    let matched: Vec<Match<NodeId>> = matching
+    let matched: Vec<Vec<NodeId>> = matching
         .edges()
         .map(|(a, b)| vec![a.index() as NodeId, b.index() as NodeId])
         .collect();
@@ -115,7 +116,7 @@ pub fn graph_pair<T: Hash + Eq + Copy>(
 
 fn build_matching_graph<T: Hash + Eq + Copy>(
     vec: &[T],
-    previous_pairings: &[Match<T>],
+    previous_pairings: &[Vec<T>],
 ) -> (UnMatrix, HashSet<ConstraintEdge>) {
     let nodes: HashMap<&T, NodeId> = vec
         .iter()
@@ -158,7 +159,7 @@ fn build_matching_graph<T: Hash + Eq + Copy>(
 fn pair_unmatched(
     graph: &UnMatrix,
     matching: &Matching<&UnMatrix>,
-) -> (Vec<Match<NodeId>>, Option<NodeId>) {
+) -> (Vec<Vec<NodeId>>, Option<NodeId>) {
     let unmatched: Vec<NodeId> = (0..(graph.node_count() as NodeId))
         .filter(|n| !matching.contains_node((*n).into()))
         .collect();
@@ -176,10 +177,10 @@ fn pair_unmatched(
 /// Returns a new pairing with the remainder added to the most compatible Match,
 /// and returns the remainder score.
 fn add_remainder_to_pairing(
-    mut matched: Vec<Match<NodeId>>,
+    mut matched: Vec<Vec<NodeId>>,
     remainder: Option<NodeId>,
     constraints: &HashSet<ConstraintEdge>,
-) -> Result<(Vec<Match<NodeId>>, usize)> {
+) -> Result<(Vec<Vec<NodeId>>, usize)> {
     match remainder {
         Some(remainder) => {
             let (remainder_match_score, remainder_match) = matched

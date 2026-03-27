@@ -4,7 +4,7 @@ use serenity::all::{
     CreateInteractionResponseMessage, Member, RoleId,
 };
 
-use crate::{AppError, AppVars};
+use crate::AppVars;
 
 pub(crate) struct SocialsParticipation<'a> {
     ctx: &'a serenity::all::Context,
@@ -17,8 +17,8 @@ impl<'a> SocialsParticipation<'a> {
         Self { ctx, role_id }
     }
 
-    pub(crate) async fn has_role(&self, member: &Member) -> Result<bool, AppError> {
-        Ok(member.roles.contains(&self.role_id))
+    pub(crate) fn has_role(&self, member: &Member) -> bool {
+        member.roles.contains(&self.role_id)
     }
 
     pub(crate) async fn opt_out(&self, interaction: &ComponentInteraction) -> anyhow::Result<()> {
@@ -26,10 +26,9 @@ impl<'a> SocialsParticipation<'a> {
             bail!("unexpected non-guild interaction");
         };
 
-        let response = match self.has_role(member).await {
-            Err(_) => bail!("Unable to find you. Please contact ICSSC IVP :("),
-            Ok(false) => bail!("You are already opted out."),
-            Ok(true) => match member.remove_role(self.ctx.http(), self.role_id).await {
+        let response = match self.has_role(member) {
+            false => bail!("You are already opted out."),
+            true => match member.remove_role(self.ctx.http(), self.role_id).await {
                 Ok(_) => "Successfully opted out of socials :(",
                 Err(_) => bail!("Unable to opt out. Please contact ICSSC IVP :("),
             },
@@ -54,10 +53,9 @@ impl<'a> SocialsParticipation<'a> {
             bail!("unexpected non-guild interaction");
         };
 
-        let response = match self.has_role(member).await {
-            Err(_) => bail!("Unable to find you. Please contact ICSSC IVP :("),
-            Ok(true) => bail!("You are already opted in to socials!"),
-            Ok(false) => match member.add_role(self.ctx.http(), self.role_id).await {
+        let response = match self.has_role(member) {
+            true => bail!("You are already opted in to socials!"),
+            false => match member.add_role(self.ctx.http(), self.role_id).await {
                 Ok(_) => "Successfully opted in to socials!",
                 Err(_) => bail!("Unable to opt in. Please contact ICSSC IVP :("),
             },
@@ -82,10 +80,9 @@ impl<'a> SocialsParticipation<'a> {
             bail!("unexpected non-guild interaction");
         };
 
-        let response = match self.has_role(member).await {
-            Ok(true) => "You are currently opted in to socials!",
-            Ok(false) => "You are currently opted out of socials!",
-            Err(_) => bail!("I couldn't check that for you :("),
+        let response = match self.has_role(member) {
+            true => "You are currently opted in to socials!",
+            false => "You are currently opted out of socials!",
         };
 
         interaction

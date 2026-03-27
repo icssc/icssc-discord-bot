@@ -63,9 +63,7 @@ async fn lookup_result_embed(
     let joined_matchy = MatchyMeetupOptIn::new(ctx, data)
         .contains_user(user.id)
         .await?;
-    let joined_socials = SocialsParticipation::new(ctx, data)
-        .has_role(guild_member)
-        .await?;
+    let joined_socials = SocialsParticipation::new(ctx, data).has_role(guild_member);
     let left_snipes = SnipesOptOut::new(ctx, data).contains_user(user.id).await?;
 
     let avatar_url = user.avatar_url().unwrap_or(user.default_avatar_url());

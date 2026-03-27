@@ -32,6 +32,7 @@ impl Default for PaginatorOptions {
 }
 
 impl PaginatorOptions {
+    #[expect(dead_code)]
     pub fn new() -> Self {
         Self::default()
     }
@@ -46,11 +47,13 @@ impl PaginatorOptions {
         self
     }
 
+    #[expect(dead_code)]
     pub fn char_limit(mut self, char_limit: NonZeroUsize) -> Self {
         self.char_limit = min(char_limit.get(), 4096);
         self
     }
 
+    #[expect(dead_code)]
     pub fn reply(mut self, reply: bool) -> Self {
         self.reply = reply;
         self
