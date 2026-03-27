@@ -2,7 +2,7 @@
 
 ![ICSSC Bot Banner](./banner.png)
 
-A utility bot created for ICSSC's Discord server. *Massive thanks to the ICSSC Graphics Committee for being awesome and drawing up custom assets in line with ICSSC and UCI's graphical themes.*
+A utility bot created for ICSSC's Discord server. *Massive thanks to the ICSSC Graphics Committee for being awesome and drawing up custom assets for the bot's profile!*
 
 ## Discord Server Setup
 
