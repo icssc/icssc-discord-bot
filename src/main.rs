@@ -1,7 +1,6 @@
 mod attendance;
 mod bitsnbytes;
 mod handler;
-mod internal_commands;
 mod matchy;
 mod meta;
 mod roster;

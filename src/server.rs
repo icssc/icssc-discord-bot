@@ -7,13 +7,8 @@ use actix_web::{App, HttpServer, ResponseError, web};
 use anyhow::Context as _;
 use serenity::all::Http;
 
-use crate::{
-    AppVarsInner,
-    routes::{
-        self,
-        oauth::{self},
-    },
-};
+use crate::AppVarsInner;
+use crate::routes;
 
 #[derive(Clone)]
 pub(crate) struct ActixData {
@@ -56,14 +51,7 @@ pub(crate) async fn run(vars: Arc<AppVarsInner>, http_action: Arc<Http>) -> anyh
         HttpServer::new(move || {
             App::new()
                 .app_data(web::Data::new(app_data.clone()))
-                .service(
-                    web::scope("/calendar").service(routes::calendar::webhook::update_calendar),
-                )
-                .service(web::scope("/oauth/start").service(oauth::start::google))
-                .service(web::scope("/oauth/cb").service(oauth::cb::google))
-                .service(
-                    web::scope("/webhook").service(routes::webhook::add_event_test::add_event_test),
-                )
+                .service(web::scope("/check").service(routes::status_check::check_discord_conn))
         })
         .bind(("::", port))
         .with_context(|| format!("failed to bind to port {port}"))

@@ -1,6 +1,6 @@
 use crate::util::ContextExtras as _;
 use crate::{AppError, AppVars, AppVarsInner, Vars, meta, roster, shortlink};
-use crate::{attendance, bitsnbytes, internal_commands, matchy, spottings};
+use crate::{attendance, bitsnbytes, matchy, spottings};
 use clap::ArgMatches;
 use itertools::Itertools as _;
 use pluralizer::pluralize;
@@ -68,7 +68,6 @@ impl RoleVars {
 pub(crate) struct HttpVars {
     pub(crate) port: u16,
     pub(crate) client: reqwest::Client,
-    pub(crate) jwt_keys: (jsonwebtoken::EncodingKey, jsonwebtoken::DecodingKey),
 }
 
 impl HttpVars {
@@ -79,15 +78,9 @@ impl HttpVars {
             .parse::<u16>()
             .expect("$PORT not valid u16 port");
 
-        let jwt_secret = env.app.jwt_secret.as_bytes();
-
         Self {
             port,
             client: reqwest::Client::new(),
-            jwt_keys: (
-                jsonwebtoken::EncodingKey::from_secret(jwt_secret),
-                jsonwebtoken::DecodingKey::from_secret(jwt_secret),
-            ),
         }
     }
 }
@@ -179,7 +172,6 @@ fn get_bot_commands() -> Vec<Command<AppVars, AppError>> {
         roster::command::roster(),
         spottings::command::spottings(),
         spottings::log::log_message_spotting(),
-        internal_commands::calendar::calendar_command(),
         shortlink::command::shortlink(),
     ]
 }
