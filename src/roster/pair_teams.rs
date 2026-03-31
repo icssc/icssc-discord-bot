@@ -1,20 +1,21 @@
 use std::time::Duration;
 
-use anyhow::ensure;
+use anyhow::{ensure, Context as _};
+use entity::{social_team_pairing_entry, social_team_pairing_group, social_team_pairing_round};
 use itertools::Itertools;
+use migration::Expr;
 use poise::CreateReply;
+use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, FromQueryResult, QuerySelect, TransactionTrait};
 use serenity::all::{
     ButtonStyle, ComponentInteractionDataKind, CreateActionRow, CreateButton,
     CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage,
 };
 
 use crate::{
-    AppContext, AppError,
-    matchy::{
+    AppContext, AppError, AppVars, matchy::{
         helpers::{Pairing, hash_seed},
         matching::graph_pair,
-    },
-    util::base_embed,
+    }, util::base_embed
 };
 
 const TEAMS: [&str; 11] = [
@@ -32,8 +33,61 @@ const TEAMS: [&str; 11] = [
     "ZotMeet",
 ];
 
-async fn save_pairs_to_db(pairs: Vec<Vec<&str>>) -> Result<(), AppError> {
-    // do stuff
+/// Get previously saved pairs
+pub(crate) async fn get_previous_matches(data: &AppVars) -> Result<Vec<Vec<String>>, AppError> {
+    #[derive(FromQueryResult)]
+    struct Teams { teams: Vec<String> }
+
+    let matches = social_team_pairing_entry::Entity::find()
+        .select_only()
+        .column_as(
+            Expr::cust(r#"ARRAY_AGG(social_team_pairing_entry.team_name)"#),
+            "teams",
+        )
+        .group_by(social_team_pairing_entry::Column::GroupId)
+        .into_model::<Teams>()
+        .all(&data.db)
+        .await
+        .context("fetch history from db")?
+        .into_iter()
+        .map(|row| row.teams)
+        .collect_vec();
+
+    Ok(matches)
+}
+
+
+/// Save new pairings to db
+async fn save_pairs_to_db(ctx: AppContext<'_>, pairs: Vec<Vec<String>>) -> Result<(), AppError> {
+    let round_sql = social_team_pairing_round::ActiveModel {
+        id: Default::default(),
+        created_at: Default::default(),
+    };
+
+    let conn = &ctx.data().db;
+    conn.transaction(move |txn| Box::pin(async move {
+        let round = round_sql.insert(txn).await.context("insert round")?;
+        for teams in pairs {
+                let group_sql = social_team_pairing_group::ActiveModel {
+                    id: Default::default(),
+                    round_id: ActiveValue::Set(round.id),
+                };
+                let group = group_sql.insert(txn).await.context("insert team pair")?;
+
+                for team in teams {
+                    let pair_member_sql = social_team_pairing_entry::ActiveModel {
+                        group_id: ActiveValue::Set(group.id),
+                        team_name: ActiveValue::Set(team.into()),
+                    };
+                    pair_member_sql
+                        .insert(txn)
+                        .await
+                        .context("insert team")?;
+                }
+            }
+
+        anyhow::Ok(())
+    })).await?;
 
     Ok(())
 }
@@ -45,7 +99,17 @@ pub(crate) async fn pair_teams(
     #[description = "Seed for the pairing, e.g. today's date"] seed: String,
 ) -> Result<(), AppError> {
     let seed = hash_seed(&seed);
-    let Pairing(pairs, _) = graph_pair(TEAMS.to_vec(), &[], seed)?;
+
+    // :(
+    let existing_pairs = get_previous_matches(ctx.data()).await?;
+    let existing_pairs_ref = existing_pairs.iter()
+        .map(|row| row.iter().map(String::as_str).collect_vec())
+        .collect_vec();
+
+    let Pairing(pairs, _) = graph_pair(TEAMS.to_vec(), &existing_pairs_ref, seed)?;
+
+    let map_pair_to_str = |p: Vec<&str>| p.into_iter().map(String::from).collect_vec();
+    let pairs = pairs.into_iter().map(map_pair_to_str).collect_vec();
 
     let content = pairs
         .iter()
@@ -91,7 +155,7 @@ pub(crate) async fn pair_teams(
                 .disabled(true);
             let action_row = CreateActionRow::Buttons(vec![button]);
 
-            save_pairs_to_db(pairs).await?;
+            save_pairs_to_db(ctx, pairs).await?;
 
             ixn.create_response(
                 ctx.http(),
