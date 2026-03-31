@@ -26,7 +26,10 @@ impl MigrationTrait for Migration {
                     .col(integer(SocialTeamPairingGroup::RoundId))
                     .foreign_key(
                         ForeignKey::create()
-                            .from(SocialTeamPairingGroup::Table, SocialTeamPairingGroup::RoundId)
+                            .from(
+                                SocialTeamPairingGroup::Table,
+                                SocialTeamPairingGroup::RoundId,
+                            )
                             .to(SocialTeamPairingRound::Table, SocialTeamPairingRound::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )

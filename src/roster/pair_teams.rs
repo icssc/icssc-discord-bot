@@ -1,21 +1,26 @@
 use std::time::Duration;
 
-use anyhow::{ensure, Context as _};
+use anyhow::{Context as _, ensure};
 use entity::{social_team_pairing_entry, social_team_pairing_group, social_team_pairing_round};
-use itertools::Itertools;
+use itertools::Itertools as _;
 use migration::Expr;
 use poise::CreateReply;
-use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, FromQueryResult, QuerySelect, TransactionTrait};
+use sea_orm::{
+    ActiveModelTrait as _, ActiveValue, EntityTrait as _, FromQueryResult, QuerySelect as _,
+    TransactionTrait as _,
+};
 use serenity::all::{
-    ButtonStyle, ComponentInteractionDataKind, CreateActionRow, CreateButton,
-    CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage,
+    ButtonStyle, ComponentInteractionDataKind, CreateActionRow, CreateButton, CreateEmbedFooter,
+    CreateInteractionResponse, CreateInteractionResponseMessage,
 };
 
 use crate::{
-    AppContext, AppError, AppVars, matchy::{
+    AppContext, AppError, AppVars,
+    matchy::{
         helpers::{Pairing, hash_seed},
         matching::graph_pair,
-    }, util::base_embed
+    },
+    util::base_embed,
 };
 
 const TEAMS: [&str; 11] = [
@@ -36,7 +41,9 @@ const TEAMS: [&str; 11] = [
 /// Get previously saved pairs
 pub(crate) async fn get_previous_matches(data: &AppVars) -> Result<Vec<Vec<String>>, AppError> {
     #[derive(FromQueryResult)]
-    struct Teams { teams: Vec<String> }
+    struct Teams {
+        teams: Vec<String>,
+    }
 
     let matches = social_team_pairing_entry::Entity::find()
         .select_only()
@@ -56,7 +63,6 @@ pub(crate) async fn get_previous_matches(data: &AppVars) -> Result<Vec<Vec<Strin
     Ok(matches)
 }
 
-
 /// Save new pairings to db
 async fn save_pairs_to_db(ctx: AppContext<'_>, pairs: Vec<Vec<String>>) -> Result<(), AppError> {
     let round_sql = social_team_pairing_round::ActiveModel {
@@ -65,9 +71,10 @@ async fn save_pairs_to_db(ctx: AppContext<'_>, pairs: Vec<Vec<String>>) -> Resul
     };
 
     let conn = &ctx.data().db;
-    conn.transaction(move |txn| Box::pin(async move {
-        let round = round_sql.insert(txn).await.context("insert round")?;
-        for teams in pairs {
+    conn.transaction(move |txn| {
+        Box::pin(async move {
+            let round = round_sql.insert(txn).await.context("insert round")?;
+            for teams in pairs {
                 let group_sql = social_team_pairing_group::ActiveModel {
                     id: Default::default(),
                     round_id: ActiveValue::Set(round.id),
@@ -77,17 +84,16 @@ async fn save_pairs_to_db(ctx: AppContext<'_>, pairs: Vec<Vec<String>>) -> Resul
                 for team in teams {
                     let pair_member_sql = social_team_pairing_entry::ActiveModel {
                         group_id: ActiveValue::Set(group.id),
-                        team_name: ActiveValue::Set(team.into()),
+                        team_name: ActiveValue::Set(team),
                     };
-                    pair_member_sql
-                        .insert(txn)
-                        .await
-                        .context("insert team")?;
+                    pair_member_sql.insert(txn).await.context("insert team")?;
                 }
             }
 
-        anyhow::Ok(())
-    })).await?;
+            anyhow::Ok(())
+        })
+    })
+    .await?;
 
     Ok(())
 }
@@ -102,7 +108,8 @@ pub(crate) async fn pair_teams(
 
     // :(
     let existing_pairs = get_previous_matches(ctx.data()).await?;
-    let existing_pairs_ref = existing_pairs.iter()
+    let existing_pairs_ref = existing_pairs
+        .iter()
         .map(|row| row.iter().map(String::as_str).collect_vec())
         .collect_vec();
 
@@ -138,40 +145,38 @@ pub(crate) async fn pair_teams(
         .await?;
 
     let reply_msg = reply.message().await?;
-    match reply_msg
+    if let Some(ixn) = reply_msg
         .await_component_interaction(&ctx.serenity_context().shard)
         .timeout(Duration::from_mins(5))
         .await
     {
-        Some(ixn) => {
-            ensure!(
-                matches!(ixn.data.kind, ComponentInteractionDataKind::Button)
-                    && ixn.data.custom_id == "teampair_save",
-                "unexpected component interaction"
-            );
-            let button = CreateButton::new("teampair_save")
-                .style(ButtonStyle::Primary)
-                .label("Saved")
-                .disabled(true);
-            let action_row = CreateActionRow::Buttons(vec![button]);
+        ensure!(
+            matches!(ixn.data.kind, ComponentInteractionDataKind::Button)
+                && ixn.data.custom_id == "teampair_save",
+            "unexpected component interaction"
+        );
+        let button = CreateButton::new("teampair_save")
+            .style(ButtonStyle::Primary)
+            .label("Saved")
+            .disabled(true);
+        let action_row = CreateActionRow::Buttons(vec![button]);
 
-            save_pairs_to_db(ctx, pairs).await?;
+        save_pairs_to_db(ctx, pairs).await?;
 
-            ixn.create_response(
-                ctx.http(),
-                CreateInteractionResponse::UpdateMessage(
-                    CreateInteractionResponseMessage::new().components(vec![action_row]),
-                ),
-            ).await?;
-        }
-        None => {
-            let footer_text = "Interaction expired; re-run this command to save pairs.";
-            let embed = embed.footer(CreateEmbedFooter::new(footer_text));
-            reply
-                .edit(ctx, CreateReply::default().embed(embed).components(vec![]))
-                .await?;
-        }
-    };
+        ixn.create_response(
+            ctx.http(),
+            CreateInteractionResponse::UpdateMessage(
+                CreateInteractionResponseMessage::new().components(vec![action_row]),
+            ),
+        )
+        .await?;
+    } else {
+        let footer_text = "Interaction expired; re-run this command to save pairs.";
+        let embed = embed.footer(CreateEmbedFooter::new(footer_text));
+        reply
+            .edit(ctx, CreateReply::default().embed(embed).components(vec![]))
+            .await?;
+    }
 
     Ok(())
 }
