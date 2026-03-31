@@ -3,7 +3,7 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "matchy_meetup_pair")]
+#[sea_orm(table_name = "social_team_pairing_group")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
@@ -12,27 +12,27 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::matchy_meetup_pair_member::Entity")]
-    MatchyMeetupPairMember,
+    #[sea_orm(has_many = "super::social_team_pairing_entry::Entity")]
+    SocialTeamPairingEntry,
     #[sea_orm(
-        belongs_to = "super::matchy_meetup_round::Entity",
+        belongs_to = "super::social_team_pairing_round::Entity",
         from = "Column::RoundId",
-        to = "super::matchy_meetup_round::Column::Id",
+        to = "super::social_team_pairing_round::Column::Id",
         on_update = "NoAction",
         on_delete = "Cascade"
     )]
-    MatchyMeetupRound,
+    SocialTeamPairingRound,
 }
 
-impl Related<super::matchy_meetup_pair_member::Entity> for Entity {
+impl Related<super::social_team_pairing_entry::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::MatchyMeetupPairMember.def()
+        Relation::SocialTeamPairingEntry.def()
     }
 }
 
-impl Related<super::matchy_meetup_round::Entity> for Entity {
+impl Related<super::social_team_pairing_round::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::MatchyMeetupRound.def()
+        Relation::SocialTeamPairingRound.def()
     }
 }
 

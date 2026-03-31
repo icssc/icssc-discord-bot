@@ -11,6 +11,8 @@ mod m20251003_231509_calendar_indexes;
 mod m20251013_031245_message_on_delete_cascade;
 mod m20260112_055632_modernize_table_names;
 mod m20260223_234418_change_social_multiplier_mview;
+mod m20260331_171513_remove_old_tables;
+mod m20260331_171625_create_teampair_table;
 
 pub struct Migrator;
 
@@ -29,6 +31,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20251013_031245_message_on_delete_cascade::Migration),
             Box::new(m20260112_055632_modernize_table_names::Migration),
             Box::new(m20260223_234418_change_social_multiplier_mview::Migration),
+            Box::new(m20260331_171513_remove_old_tables::Migration),
+            Box::new(m20260331_171625_create_teampair_table::Migration),
         ]
     }
 }
