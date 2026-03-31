@@ -3,11 +3,12 @@ use crate::AppError;
 use crate::roster::desynced::check_discord_roles;
 use crate::roster::desynced::check_google_access;
 use crate::roster::user_lookup::lookup_discord;
+use crate::roster::pair_teams::pair_teams;
 
 #[poise::command(
     prefix_command,
     slash_command,
-    subcommands("check_discord_roles", "check_google_access", "lookup_discord"),
+    subcommands("check_discord_roles", "check_google_access", "lookup_discord", "pair_teams"),
     guild_only
 )]
 pub(crate) async fn roster(ctx: AppContext<'_>) -> Result<(), AppError> {
