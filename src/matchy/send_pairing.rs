@@ -5,7 +5,7 @@ use crate::util::text::remove_markdown;
 use anyhow::{Context as _, Error, Result, bail, ensure};
 use itertools::Itertools as _;
 use poise::futures_util::future::try_join_all;
-use serenity::all::GuildId;
+use serenity::all::{GuildId, Mentionable as _, UserId};
 use std::collections::HashSet;
 
 /// Run the /send_pairing command
@@ -95,7 +95,7 @@ async fn handle_send_pairing(ctx: AppContext<'_>, key: String) -> Result<String>
         1.. => format!(
             "Successfully messaged {} users, but failed for the following users: {}",
             messages_sent,
-            failed_to_send.into_iter().join(", ")
+            failed_to_send.iter().map(UserId::mention).join(", ")
         ),
     })
 }
