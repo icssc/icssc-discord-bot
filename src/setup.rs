@@ -171,6 +171,7 @@ fn get_bot_commands() -> Vec<Command<AppVars, AppError>> {
         roster::user_lookup::user_lookup(),
         roster::command::roster(),
         spottings::command::spottings(),
+        spottings::remove_spotting::remove_spotting(),
         spottings::log::log_message_spotting(),
         shortlink::command::shortlink(),
     ]
