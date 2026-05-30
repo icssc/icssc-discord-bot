@@ -145,7 +145,8 @@ pub(crate) async fn leaderboard(
                 format!(
                     "1. <@{}>: {total} points ({snipes_text} + {socials_text})",
                     mdl.id
-                ).into_boxed_str()
+                )
+                .into_boxed_str()
             })
             .collect_vec(),
         LeaderboardBy::SocialCount => user_stat::Entity::find()
