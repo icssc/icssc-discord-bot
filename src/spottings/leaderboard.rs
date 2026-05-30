@@ -16,6 +16,8 @@ use std::num::NonZeroUsize;
 
 #[derive(ChoiceParameter, PartialEq, Eq, Copy, Clone, Debug, Hash)]
 enum LeaderboardBy {
+    #[name = "Total points"]
+    TotalPoints,
     #[name = "Number of socials"]
     SocialCount,
     #[name = "Total snipes"]
@@ -111,7 +113,7 @@ struct SnipeRateQuery {
 #[poise::command(prefix_command, slash_command, guild_only)]
 pub(crate) async fn leaderboard(
     ctx: AppContext<'_>,
-    #[description = "Leaderboard type; default is \"Total snipes\'"] by: Option<LeaderboardBy>,
+    #[description = "The type of leaderboard to show"] by: Option<LeaderboardBy>,
 ) -> Result<(), AppError> {
     let Some(by) = by else {
         show_summary_leaderboard(ctx).await?;
@@ -119,6 +121,33 @@ pub(crate) async fn leaderboard(
     };
 
     let lines = match by {
+        LeaderboardBy::TotalPoints => user_stat::Entity::find()
+            .order_by_desc(
+                Expr::col(user_stat::Column::SnipesInitiated)
+                    .add(Expr::col(user_stat::Column::SocialsInitiated).mul(2))
+                    .add(Expr::col(user_stat::Column::SocialsVictim).mul(2)),
+            )
+            .filter(
+                Condition::any()
+                    .add(user_stat::Column::SocialsInitiated.ne(0))
+                    .add(user_stat::Column::SocialsVictim.ne(0))
+                    .add(user_stat::Column::SnipesInitiated.ne(0)),
+            )
+            .all(&ctx.data().db)
+            .await
+            .context("fetch leaderboard from db")?
+            .into_iter()
+            .map(|mdl| {
+                let social_ct = mdl.socials_initiated + mdl.socials_victim;
+                let total = mdl.snipes_initiated + social_ct * 2;
+                let snipes_text = pluralize("snipe", mdl.snipes_initiated as isize, true);
+                let socials_text = pluralize("social", social_ct as isize, true);
+                format!(
+                    "1. <@{}>: {total} points ({snipes_text} + {socials_text})",
+                    mdl.id
+                ).into_boxed_str()
+            })
+            .collect_vec(),
         LeaderboardBy::SocialCount => user_stat::Entity::find()
             .order_by_desc(
                 Expr::col(user_stat::Column::SocialsInitiated)
