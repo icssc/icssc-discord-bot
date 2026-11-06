@@ -8,7 +8,7 @@ rust-version = "1.92.0"
 members = [".", "entity", "migration"]
 
 [dependencies]
-actix-web = "4.12.1"
+actix-web = "4.18.2"
 anyhow = "1.0.103"
 chrono = "0.4.42"
 clap = { version = "4.5.54", features = ["cargo"] }
